@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Expense Tracker</title>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f7fb;
+        color: #1e293b;
+      }
+
+      header {
+        background: #4338ca;
+        color: white;
+        padding: 22px 8%;
+      }
+
+      header h1 {
+        margin: 0;
+      }
+      header p {
+        color: #e0e7ff;
+        margin-bottom: 0;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 0 20px;
+      }
+
+      .summary {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+        padding: 28px;
+        border-radius: 16px;
+        margin-bottom: 25px;
+      }
+
+      .summary h2 {
+        margin: 0;
+        font-size: 36px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+      }
+
+      .card {
+        background: white;
+        padding: 24px;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px #0f172a0a;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 12px;
+        margin: 9px 0;
+        border: 1px solid #dbe2ea;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+
+      button {
+        padding: 12px 16px;
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .add-button {
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .expense {
+        padding: 14px 0;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .expense p {
+        margin: 6px 0;
+        color: #64748b;
+        font-size: 13px;
+      }
+
+      .amount {
+        color: #4338ca;
+        font-weight: bold;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      .edit-button {
+        background: #4338ca;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+      }
+
+      .delete-button {
+        background: #dc2626;
+      }
+
+      .empty {
+        color: #64748b;
+        text-align: center;
+        padding: 20px 0;
+      }
+
+      footer {
+        text-align: center;
+        padding: 25px;
+        color: #64748b;
+        font-size: 13px;
+      }
+
+      @media (max-width: 650px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        header {
+          padding: 20px;
+        }
+        .summary h2 {
+          font-size: 30px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>💰 Smart Expense Tracker</h1>
+      <p>Manage your money. Track your spending.</p>
+    </header>
+
+    <main class="container">
+      <section class="summary">
+        <p>Total Expenses</p>
+        <h2>₹{{ total|floatformat:2 }}</h2>
+      </section>
+
+      <section class="card" style="margin-bottom: 22px">
+        <h2>💰 Monthly Budget</h2>
+
+        <p>Monthly budget: ₹{{ budget|floatformat:2 }}</p>
+        <p>Amount spent this month: ₹{{ month_spent|floatformat:2 }}</p>
+        <p>Remaining budget: ₹{{ remaining|floatformat:2 }}</p>
+
+        <div
+          style="
+            background: #e5e7eb;
+            border-radius: 10px;
+            height: 14px;
+            overflow: hidden;
+          "
+        >
+          <div
+            style="background: #4f46e5; height: 14px; width: {{ percent }}%;"
+          ></div>
+        </div>
+
+        <form method="POST" style="margin-top: 15px">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="budget" />
+
+          <input
+            type="number"
+            name="amount"
+            placeholder="Enter monthly budget (₹)"
+            min="1"
+            step="0.01"
+            required
+          />
+
+          <button type="submit">Update Budget</button>
+        </form>
+      </section>
+
+      <div class="layout">
+        <section class="card">
+          <h2>➕ Add New Expense</h2>
+
+          <form method="POST">
+            {% csrf_token %}
+
+            <input
+              type="text"
+              name="title"
+              placeholder="Expense name"
+              maxlength="100"
+              required
+            />
+
+            <input
+              type="number"
+              name="amount"
+              placeholder="Amount (₹)"
+              min="0.01"
+              step="0.01"
+              required
+            />
+
+            <select name="category" required>
+              <option value="">Select category</option>
+              <option value="Food">🍔 Food</option>
+              <option value="Travel">🚌 Travel</option>
+              <option value="Shopping">🛍️ Shopping</option>
+              <option value="Education">📚 Education</option>
+              <option value="Other">📌 Other</option>
+            </select>
+
+            <input type="date" name="date" required />
+            <button class="add-button" type="submit">Add Expense</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>📋 Expense History</h2>
+
+          {% for expense in expenses %}
+          <div class="expense">
+            <strong>{{ expense.title }}</strong>
+            <span class="amount"> ₹{{ expense.amount|floatformat:2 }} </span>
+
+            <p>{{ expense.category }} · {{ expense.date }}</p>
+
+            <div class="actions">
+              <a class="edit-button" href="{% url 'edit_expense' expense.id %}">
+                Edit
+              </a>
+
+              <form
+                method="POST"
+                action="{% url 'delete_expense' expense.id %}"
+                onsubmit="return confirm('Delete this expense?');"
+              >
+                {% csrf_token %}
+                <button class="delete-button" type="submit">Delete</button>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <p class="empty">No expenses yet. Add your first expense!</p>
+          {% endfor %}
+        </section>
+      </div>
+    </main>
+
+    <footer>Smart Expense Tracker · Built with Python and Django</footer>
+
+    <script>
+      const dateInput = document.querySelector('input[name="date"]');
+
+      if (dateInput && !dateInput.value) {
+        const today = new Date();
+        dateInput.value = [
+          today.getFullYear(),
+          String(today.getMonth() + 1).padStart(2, "0"),
+          String(today.getDate()).padStart(2, "0"),
+        ].join("-");
+      }
+    </script>
+  </body>
+</html>
